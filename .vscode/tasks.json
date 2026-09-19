@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure MinGW",
+            "type": "shell",
+            "command": "cmake --preset tdm-gcc-mingw",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake: Build MinGW",
+            "type": "shell",
+            "command": "cmake --build --preset tdm-gcc-mingw-release",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "CMake: Configure MinGW",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CMake: Test MinGW",
+            "type": "shell",
+            "command": "ctest --preset tdm-gcc-mingw-release",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "CMake: Build MinGW",
+            "problemMatcher": []
+        }
+    ]
+}

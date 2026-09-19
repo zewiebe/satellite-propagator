@@ -1,0 +1,42 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "GCC 16.1.0 x86_64-w64-mingw32 (ucrt64)",
+            "displayName": "GCC 16.1.0 x86_64-w64-mingw32 (ucrt64)",
+            "description": "Using compilers: C = C:\\msys64\\ucrt64\\bin\\gcc.exe, CXX = C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "C:/msys64/ucrt64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "tdm-gcc-mingw",
+            "displayName": "TDM-GCC MinGW",
+            "generator": "MinGW Makefiles",
+            "binaryDir": "${sourceDir}/build-mingw",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_COMPILER": "C:/TDM-GCC-64/bin/g++.exe"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "tdm-gcc-mingw-release",
+            "configurePreset": "tdm-gcc-mingw"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "tdm-gcc-mingw-release",
+            "configurePreset": "tdm-gcc-mingw",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}
