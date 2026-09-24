@@ -1,6 +1,22 @@
 # Satellite Propagator
 
-A standalone C++17 satellite propagation simulator using a fourth-order Runge-Kutta integrator and a two-body Earth model. Positions are expressed in kilometers and velocities in kilometers per second.
+A standalone C++17 satellite propagation simulator using a fourth-order Runge-Kutta integrator and a two-body Earth model.
+
+## Simulation units
+
+The simulator uses a consistent kilometer-kilogram-second convention:
+
+| Quantity | Unit | Notes |
+| --- | --- | --- |
+| Distance / position | kilometer (`km`) | Cartesian coordinates use this unit. |
+| Velocity | kilometer per second (`km/s`) | State velocity components use this unit. |
+| Acceleration | kilometer per second squared (`km/s^2`) | The two-body gravity model returns this unit. |
+| Time / duration / step | second (`s`) | Propagation intervals and integration steps use this unit. |
+| Angle | radian (`rad`) | Use radians for future attitude or orbital-angle APIs. |
+| Mass | kilogram (`kg`) | Use kilograms for future spacecraft or body-mass APIs. |
+| Gravitational parameter | cubic kilometer per second squared (`km^3/s^2`) | The constructor's `mu` value is expressed in this unit. |
+
+Angles are measured in radians rather than degrees. Mass is recorded in kilograms, while the current two-body propagator takes the gravitational parameter directly and does not yet expose a mass parameter.
 
 ## Build
 
