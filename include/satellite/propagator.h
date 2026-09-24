@@ -14,12 +14,17 @@ struct Vector3 {
     Vector3 operator*(double scalar) const;
 };
 
-struct State {
+// A Cartesian translational state vector containing position and velocity.
+// Position is in kilometers (km); velocity is in kilometers per second (km/s).
+struct StateVector {
     // Position in kilometers (km).
     Vector3 position;
     // Velocity in kilometers per second (km/s).
     Vector3 velocity;
 };
+
+// Compatibility name for callers using the shorter state type.
+using State = StateVector;
 
 class Propagator {
 public:
@@ -30,7 +35,9 @@ public:
     State propagate(const State& initial_state, double duration_seconds,
                     double step_seconds) const;
 
-    // Returns acceleration in kilometers per second squared (km/s^2).
+    // Returns Earth-centered two-body acceleration in km/s^2. The supplied
+    // gravitational parameter is the only force parameter; no perturbations
+    // are modeled.
     Vector3 acceleration(const Vector3& position) const;
 
 private:

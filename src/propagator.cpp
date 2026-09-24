@@ -33,7 +33,8 @@ Vector3 Propagator::acceleration(const Vector3& position) const {
         throw std::invalid_argument("position cannot be at the central body origin");
     }
 
-    const double radius_cubed = radius_squared * std::sqrt(radius_squared);
+    const double radius = std::sqrt(radius_squared);
+    const double radius_cubed = radius_squared * radius;
     return position * (-gravitational_parameter_ / radius_cubed);
 }
 

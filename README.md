@@ -18,6 +18,20 @@ The simulator uses a consistent kilometer-kilogram-second convention:
 
 Angles are measured in radians rather than degrees. Mass is recorded in kilograms, while the current two-body propagator takes the gravitational parameter directly and does not yet expose a mass parameter.
 
+Shared physical constants are declared in `include/satellite/constants.h`. The initial values are Earth’s equatorial radius (`6378.137 km`), Earth’s gravitational parameter (`398600.4418 km^3/s^2`), mathematical pi, and constexpr degree/radian conversion factors.
+
+## State vector
+
+`satellite::StateVector` represents the translational state of a spacecraft with a Cartesian position vector in `km` and a Cartesian velocity vector in `km/s`. `satellite::State` remains available as a shorter compatibility name.
+
+## Gravity model
+
+`Propagator::acceleration` applies the Earth-centered two-body model
+
+$$\mathbf{a} = -\frac{\mu}{r^3}\mathbf{r}$$
+
+where `mu` is Earth's gravitational parameter and `r` is the position magnitude. The model includes no atmospheric drag, third-body gravity, oblateness, or other perturbations. A position at the central-body origin is rejected because the equation is singular there.
+
 ## Build
 
 Requirements: CMake 3.16 or newer and a C++17 compiler.
