@@ -180,5 +180,37 @@ int main() {
         return 1;
     }
 
+    const auto constant_velocity_derivative =
+        [](const satellite::State& state) {
+            return satellite::StateDerivative{state.velocity, {0.0, 0.0, 0.0}};
+        };
+    const satellite::State euler_state =
+        satellite::EulerIntegrator{}.integrate({{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}},
+                                              1.0, 0.5,
+                                              constant_velocity_derivative);
+    if (!close(euler_state.position.x, 1.0, tolerance) ||
+        !close(euler_state.position.y, 0.0, tolerance) ||
+        !close(euler_state.position.z, 0.0, tolerance) ||
+        !close(euler_state.velocity.x, 1.0, tolerance) ||
+        !close(euler_state.velocity.y, 0.0, tolerance) ||
+        !close(euler_state.velocity.z, 0.0, tolerance)) {
+        std::cerr << "Euler integrator did not respect the generic state derivative\n";
+        return 1;
+    }
+
+    const satellite::State rk4_state =
+        satellite::RungeKutta4Integrator{}.integrate({{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}},
+                                                    1.0, 0.5,
+                                                    constant_velocity_derivative);
+    if (!close(rk4_state.position.x, 1.0, tolerance) ||
+        !close(rk4_state.position.y, 0.0, tolerance) ||
+        !close(rk4_state.position.z, 0.0, tolerance) ||
+        !close(rk4_state.velocity.x, 1.0, tolerance) ||
+        !close(rk4_state.velocity.y, 0.0, tolerance) ||
+        !close(rk4_state.velocity.z, 0.0, tolerance)) {
+        std::cerr << "Runge-Kutta integrator did not respect the generic state derivative\n";
+        return 1;
+    }
+
     return 0;
 }

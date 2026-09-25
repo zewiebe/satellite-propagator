@@ -6,6 +6,62 @@
 
 namespace satellite {
 
+namespace {
+
+void validate_duration_and_step(double duration_seconds, double step_seconds) {
+    if (duration_seconds < 0.0 || step_seconds <= 0.0) {
+        throw std::invalid_argument(
+            "duration must be non-negative and step must be positive");
+    }
+}
+
+State integrate_with_step(const State& initial_state, double duration_seconds,
+                          double step_seconds,
+                          const StateDerivativeFunction& derivative,
+                          bool use_euler) {
+    if (!derivative) {
+        throw std::invalid_argument("state derivative must be supplied");
+    }
+
+    validate_duration_and_step(duration_seconds, step_seconds);
+
+    State state = initial_state;
+    double elapsed = 0.0;
+    while (elapsed < duration_seconds) {
+        const double step = std::min(step_seconds, duration_seconds - elapsed);
+
+        if (use_euler) {
+            const StateDerivative derivative_value = derivative(state);
+            state.position = state.position + derivative_value.position * step;
+            state.velocity = state.velocity + derivative_value.velocity * step;
+        } else {
+            const StateDerivative k1 = derivative(state);
+            const State midpoint_one{state.position + k1.position * (step * 0.5),
+                                     state.velocity + k1.velocity * (step * 0.5)};
+            const StateDerivative k2 = derivative(midpoint_one);
+            const State midpoint_two{state.position + k2.position * (step * 0.5),
+                                     state.velocity + k2.velocity * (step * 0.5)};
+            const StateDerivative k3 = derivative(midpoint_two);
+            const State endpoint{state.position + k3.position * step,
+                                 state.velocity + k3.velocity * step};
+            const StateDerivative k4 = derivative(endpoint);
+
+            state.position = state.position +
+                             (k1.position + k2.position * 2.0 + k3.position * 2.0 +
+                              k4.position) * (step / 6.0);
+            state.velocity = state.velocity +
+                             (k1.velocity + k2.velocity * 2.0 + k3.velocity * 2.0 +
+                              k4.velocity) * (step / 6.0);
+        }
+
+        elapsed += step;
+    }
+
+    return state;
+}
+
+} // namespace
+
 Vector3 Vector3::operator+(const Vector3& other) const {
     return {x + other.x, y + other.y, z + other.z};
 }
@@ -38,42 +94,48 @@ Vector3 Propagator::acceleration(const Vector3& position) const {
     return position * (-gravitational_parameter_ / radius_cubed);
 }
 
+StateDerivative Propagator::derivative(const State& state) const {
+    return {state.velocity, acceleration(state.position)};
+}
+
 State Propagator::propagate(const State& initial_state, double duration_seconds,
                             double step_seconds) const {
-    if (duration_seconds < 0.0 || step_seconds <= 0.0) {
-        throw std::invalid_argument("duration must be non-negative and step must be positive");
-    }
+    return propagate_rk4(initial_state, duration_seconds, step_seconds);
+}
 
-    State state = initial_state;
-    double elapsed = 0.0;
-    while (elapsed < duration_seconds) {
-        const double step = std::min(step_seconds, duration_seconds - elapsed);
-        const Vector3 k1_position = state.velocity;
-        const Vector3 k1_velocity = acceleration(state.position);
+State Propagator::propagate_euler(const State& initial_state,
+                                 double duration_seconds,
+                                 double step_seconds) const {
+    return EulerIntegrator{}.integrate(initial_state, duration_seconds,
+                                       step_seconds,
+                                       [this](const State& state) {
+                                           return derivative(state);
+                                       });
+}
 
-        const State midpoint_one{state.position + k1_position * (step * 0.5),
-                                 state.velocity + k1_velocity * (step * 0.5)};
-        const Vector3 k2_position = midpoint_one.velocity;
-        const Vector3 k2_velocity = acceleration(midpoint_one.position);
+State Propagator::propagate_rk4(const State& initial_state,
+                               double duration_seconds,
+                               double step_seconds) const {
+    return RungeKutta4Integrator{}.integrate(initial_state, duration_seconds,
+                                            step_seconds,
+                                            [this](const State& state) {
+                                                return derivative(state);
+                                            });
+}
 
-        const State midpoint_two{state.position + k2_position * (step * 0.5),
-                                 state.velocity + k2_velocity * (step * 0.5)};
-        const Vector3 k3_position = midpoint_two.velocity;
-        const Vector3 k3_velocity = acceleration(midpoint_two.position);
+State EulerIntegrator::integrate(const State& initial_state,
+                                double duration_seconds, double step_seconds,
+                                const StateDerivativeFunction& derivative) const {
+    return integrate_with_step(initial_state, duration_seconds, step_seconds,
+                              derivative, true);
+}
 
-        const State endpoint{state.position + k3_position * step,
-                             state.velocity + k3_velocity * step};
-        const Vector3 k4_position = endpoint.velocity;
-        const Vector3 k4_velocity = acceleration(endpoint.position);
-
-        state.position = state.position +
-                         (k1_position + k2_position * 2.0 + k3_position * 2.0 + k4_position) * (step / 6.0);
-        state.velocity = state.velocity +
-                         (k1_velocity + k2_velocity * 2.0 + k3_velocity * 2.0 + k4_velocity) * (step / 6.0);
-        elapsed += step;
-    }
-
-    return state;
+State RungeKutta4Integrator::integrate(const State& initial_state,
+                                      double duration_seconds,
+                                      double step_seconds,
+                                      const StateDerivativeFunction& derivative) const {
+    return integrate_with_step(initial_state, duration_seconds, step_seconds,
+                              derivative, false);
 }
 
 }
