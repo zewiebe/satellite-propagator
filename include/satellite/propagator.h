@@ -105,4 +105,9 @@ private:
     double gravitational_parameter_;
 };
 
+// Propagates with the Earth gravitational parameter and the default RK4
+// integrator. Duration and timestep are in seconds.
+StateVector propagate(const StateVector& initial_state, double duration_seconds,
+                      double step_seconds);
+
 }

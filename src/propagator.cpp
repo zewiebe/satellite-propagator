@@ -1,4 +1,5 @@
 #include "satellite/propagator.h"
+#include "satellite/constants.h"
 
 #include <algorithm>
 #include <cmath>
@@ -96,6 +97,12 @@ Vector3 Propagator::acceleration(const Vector3& position) const {
 
 StateDerivative Propagator::derivative(const State& state) const {
     return {state.velocity, acceleration(state.position)};
+}
+
+StateVector propagate(const StateVector& initial_state, double duration_seconds,
+                      double step_seconds) {
+    return Propagator{constants::earth_gravitational_parameter_km3_s2}.propagate(
+        initial_state, duration_seconds, step_seconds);
 }
 
 State Propagator::propagate(const State& initial_state, double duration_seconds,
