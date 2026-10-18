@@ -1,4 +1,5 @@
 #include "satellite/propagator.h"
+#include "satellite/constants.h"
 
 #include <cstdlib>
 #include <exception>
@@ -6,7 +7,6 @@
 #include <iostream>
 
 namespace {
-constexpr double earth_mu_km3_s2 = 398600.4418;
 constexpr double default_duration_seconds = 3600.0;
 constexpr double default_step_seconds = 10.0;
 
@@ -28,7 +28,8 @@ int main(int argc, char* argv[]) {
             {7000.0, 0.0, 0.0},
             {0.0, 7.54605329, 0.0}
         };
-        satellite::Propagator propagator(earth_mu_km3_s2);
+        satellite::Propagator propagator(
+            satellite::constants::earth_gravitational_parameter_km3_s2);
         const satellite::State final_state = propagator.propagate(initial_state, duration, step);
 
         std::cout << std::fixed << std::setprecision(6)

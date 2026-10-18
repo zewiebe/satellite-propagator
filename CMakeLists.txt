@@ -26,8 +26,13 @@ add_executable(satellite-propagator
 target_link_libraries(satellite-propagator PRIVATE propagator)
 
 enable_testing()
-add_executable(propagator-tests
-    tests/propagator_tests.cpp
-)
-target_link_libraries(propagator-tests PRIVATE propagator)
-add_test(NAME propagator-tests COMMAND propagator-tests)
+
+include(CTest)
+
+if(BUILD_TESTING)
+    add_executable(propagator-tests
+        tests/propagator_tests.cpp
+    )
+    target_link_libraries(propagator-tests PRIVATE propagator)
+    add_test(NAME propagator-tests COMMAND propagator-tests)
+endif()
