@@ -312,6 +312,101 @@ int main() {
         return 1;
     }
 
+    const double ellipse_periapsis_km = 7000.0;
+    const double ellipse_apoapsis_km = 9000.0;
+    const double ellipse_semi_major_axis_km =
+        0.5 * (ellipse_periapsis_km + ellipse_apoapsis_km);
+    const double ellipse_velocity_at_periapsis_km_s =
+        std::sqrt(gravitational_parameter *
+                  (2.0 / ellipse_periapsis_km -
+                   1.0 / ellipse_semi_major_axis_km));
+    const satellite::State ellipse_initial_state{
+        {ellipse_periapsis_km, 0.0, 0.0},
+        {0.0, ellipse_velocity_at_periapsis_km_s, 0.0}};
+    const double ellipse_orbital_period_seconds =
+        2.0 * satellite::constants::pi *
+        std::sqrt(std::pow(ellipse_semi_major_axis_km, 3) /
+                  gravitational_parameter);
+    const double ellipse_half_period_seconds =
+        0.5 * ellipse_orbital_period_seconds;
+    const satellite::State ellipse_apoapsis_state =
+        propagator.propagate_rk4(ellipse_initial_state,
+                                ellipse_half_period_seconds, 10.0);
+    const double ellipse_apoapsis_radius_km =
+        magnitude(ellipse_apoapsis_state.position);
+    const satellite::State ellipse_after_one_period =
+        propagator.propagate_rk4(ellipse_initial_state,
+                                ellipse_orbital_period_seconds, 10.0);
+    const double ellipse_return_position_error_km =
+        magnitude(ellipse_after_one_period.position - ellipse_initial_state.position);
+
+    const double ellipse_initial_energy =
+        specific_energy(ellipse_initial_state, gravitational_parameter);
+    const double ellipse_initial_angular_momentum =
+        angular_momentum_magnitude(ellipse_initial_state);
+    double minimum_radius_km = 1.0e100;
+    double maximum_radius_km = 0.0;
+    double maximum_energy_drift_percent = 0.0;
+    double maximum_angular_momentum_drift_percent = 0.0;
+    satellite::State ellipse_sample_state = ellipse_initial_state;
+    double ellipse_elapsed_seconds = 0.0;
+    while (ellipse_elapsed_seconds < ellipse_orbital_period_seconds) {
+        const double interval = std::min(60.0,
+                                        ellipse_orbital_period_seconds -
+                                            ellipse_elapsed_seconds);
+        ellipse_sample_state = propagator.propagate_rk4(
+            ellipse_sample_state, interval, 10.0);
+        ellipse_elapsed_seconds += interval;
+
+        const double radius_km = magnitude(ellipse_sample_state.position);
+        minimum_radius_km = std::min(minimum_radius_km, radius_km);
+        maximum_radius_km = std::max(maximum_radius_km, radius_km);
+
+        const double energy_drift_percent =
+            100.0 * std::abs(specific_energy(ellipse_sample_state,
+                                            gravitational_parameter) -
+                            ellipse_initial_energy) /
+            std::abs(ellipse_initial_energy);
+        const double angular_momentum_drift_percent =
+            100.0 * std::abs(angular_momentum_magnitude(ellipse_sample_state) -
+                             ellipse_initial_angular_momentum) /
+            ellipse_initial_angular_momentum;
+        maximum_energy_drift_percent =
+            std::max(maximum_energy_drift_percent, energy_drift_percent);
+        maximum_angular_momentum_drift_percent = std::max(
+            maximum_angular_momentum_drift_percent,
+            angular_momentum_drift_percent);
+    }
+
+    if (!close(ellipse_apoapsis_radius_km, ellipse_apoapsis_km, 0.1) ||
+        !close(minimum_radius_km, ellipse_periapsis_km, 0.1) ||
+        !close(ellipse_orbital_period_seconds,
+               2.0 * satellite::constants::pi *
+                   std::sqrt(std::pow(ellipse_semi_major_axis_km, 3) /
+                             gravitational_parameter),
+               0.001) ||
+        ellipse_return_position_error_km > 0.1 ||
+        maximum_energy_drift_percent > 0.001 ||
+        maximum_angular_momentum_drift_percent > 0.001) {
+        std::cerr << "Elliptical orbit validation failed: periapsis="
+                  << minimum_radius_km << " km, apoapsis="
+                  << maximum_radius_km << " km, period="
+                  << ellipse_orbital_period_seconds
+                  << " s, return position error="
+                  << ellipse_return_position_error_km << " km, max energy drift="
+                  << maximum_energy_drift_percent << "% , max angular momentum drift="
+                  << maximum_angular_momentum_drift_percent << "%\n";
+        return 1;
+    }
+
+    std::cout << std::fixed << std::setprecision(6)
+              << "Elliptical orbit validation: periapsis=" << minimum_radius_km
+              << " km, apoapsis=" << maximum_radius_km
+              << " km, period=" << ellipse_orbital_period_seconds
+              << " s, max energy drift=" << maximum_energy_drift_percent
+              << "%, max angular momentum drift="
+              << maximum_angular_momentum_drift_percent << "%\n";
+
     const auto measure_errors = [&](const satellite::State& state) {
         const double position_error_km =
             magnitude(state.position - analytical_final_state.position);
